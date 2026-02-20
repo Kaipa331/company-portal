@@ -168,7 +168,7 @@ export default function Contact() {
                     <p className="text-xl opacity-90 mb-10">
                         Call or WhatsApp our team for immediate assistance or to schedule a consultation.
                     </p>
-                    <div className="text-4xl font-bold text-green-300 mb-6">+265 XXX XXX XXX</div>
+                    <div className="text-4xl font-bold text-green-300 mb-6">+265 883 390 482</div>
                     <p className="text-lg opacity-80">Available during business hours • Quick response guaranteed</p>
                 </div>
             </section>

@@ -1,70 +1,199 @@
-export default function AdminProjects() {
-  // Fake data – later from backend
-  const projects = [
-    { id: 1, name: "E-commerce Platform", client: "Kaipa Ltd", status: "In Progress", progress: 65, deadline: "2026-04-15" },
-    { id: 2, name: "HR Management System", client: "Retail Chain", status: "Testing", progress: 92, deadline: "2026-02-28" },
-    { id: 3, name: "Digital Strategy Consulting", client: "Finance Co", status: "Completed", progress: 100, deadline: "2025-11-30" },
-    { id: 4, name: "Mobile App Redesign", client: "Kaipa Ltd", status: "Planning", progress: 10, deadline: "2026-06-30" },
-  ];
+import AdminLayout from '@/Layouts/AdminLayout';
+import { useForm, usePage } from '@inertiajs/react';
+import { useState, useEffect } from 'react';
 
-  return (
-    <div className="min-h-screen bg-gray-50 py-10 px-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-10">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
-            All Projects
-          </h1>
-          <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
-            + New Project
-          </button>
-        </div>
+export default function AdminProjects({ projects = [] }) {
+    const emptyForm = { name: '', client: '', status: 'Pending', description: '' };
+    const { data, setData, post, put, delete: destroy, reset } = useForm(emptyForm);
+    const [editing, setEditing] = useState(null);
 
-        <div className="bg-white rounded-xl shadow overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Project</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Client</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Status</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Progress</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Deadline</th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 bg-white">
-                {projects.map((project) => (
-                  <tr key={project.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-5 text-sm font-medium text-gray-900">{project.name}</td>
-                    <td className="px-6 py-5 text-sm text-gray-600">{project.client}</td>
-                    <td className="px-6 py-5">
-                      <span
-                        className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${
-                          project.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                          project.status === 'Testing' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-blue-100 text-blue-800'
-                        }`}
-                      >
-                        {project.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-5">
-                      <div className="w-full bg-gray-200 rounded-full h-2.5">
-                        <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${project.progress}%` }} />
-                      </div>
-                    </td>
-                    <td className="px-6 py-5 text-sm text-gray-600">{project.deadline}</td>
-                    <td className="px-6 py-5 text-center">
-                      <button className="text-blue-600 hover:text-blue-800 mr-3">View</button>
-                      <button className="text-red-600 hover:text-red-800">Delete</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+    // Flash message from Laravel
+    const { flash } = usePage().props;
+    const [message, setMessage] = useState(flash?.success || '');
+
+    // Auto-hide message after 3 seconds
+    useEffect(() => {
+        if (message) {
+            const timer = setTimeout(() => setMessage(''), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [message]);
+
+    // Submit form for create or update
+    const submitForm = (e) => {
+        e.preventDefault();
+
+        if (editing) {
+            put(`/admin/projects/${editing.id}`, {
+                onSuccess: () => {
+                    setEditing(null);
+                    reset();
+                },
+            });
+        } else {
+            post('/admin/projects', {
+                onSuccess: () => reset(),
+            });
+        }
+    };
+
+    // Start editing a project
+    const startEdit = (p) => {
+        setEditing(p);
+        setData({
+            name: p.name || '',
+            client: p.client || '',
+            status: p.status || 'Pending',
+            description: p.description || '',
+        });
+    };
+
+    // Cancel editing
+    const cancelEdit = () => {
+        setEditing(null);
+        reset();
+    };
+
+    // Map status to colored badges
+    const statusBadge = (status) => {
+        const map = {
+            Pending: "bg-yellow-100 text-yellow-700",
+            Active: "bg-green-100 text-green-700",
+            Completed: "bg-blue-100 text-blue-700",
+        };
+        return map[status] || "bg-gray-100 text-gray-700";
+    };
+
+    return (
+        <div className="space-y-10">
+
+            {/* Flash message popup */}
+            {message && (
+                <div className="fixed top-5 right-5 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in">
+                    {message}
+                </div>
+            )}
+
+            {/* Page header */}
+            <div>
+                <h1 className="text-3xl font-bold">Projects Manager</h1>
+                <p className="text-gray-600">Create, update and manage consultancy projects</p>
+            </div>
+
+            {/* Project form */}
+            <form onSubmit={submitForm} className="bg-white p-8 rounded-2xl shadow space-y-5">
+                <h2 className="text-xl font-semibold">{editing ? "Edit Project" : "Create New Project"}</h2>
+
+                <input
+                    type="text"
+                    placeholder="Project Name"
+                    value={data.name}
+                    onChange={e => setData('name', e.target.value)}
+                    className="w-full border px-4 py-3 rounded-lg"
+                    required
+                />
+
+                <input
+                    type="text"
+                    placeholder="Client Name"
+                    value={data.client}
+                    onChange={e => setData('client', e.target.value)}
+                    className="w-full border px-4 py-3 rounded-lg"
+                    required
+                />
+
+                <select
+                    value={data.status}
+                    onChange={e => setData('status', e.target.value)}
+                    className="w-full border px-4 py-3 rounded-lg"
+                >
+                    <option>Pending</option>
+                    <option>Active</option>
+                    <option>Completed</option>
+                </select>
+
+                <textarea
+                    placeholder="Project Description"
+                    value={data.description}
+                    onChange={e => setData('description', e.target.value)}
+                    className="w-full border px-4 py-3 rounded-lg"
+                />
+
+                <div className="flex gap-3">
+                    <button
+                        type="submit"
+                        className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700"
+                    >
+                        {editing ? 'Update Project' : 'Create Project'}
+                    </button>
+
+                    {editing && (
+                        <button
+                            type="button"
+                            onClick={cancelEdit}
+                            className="bg-gray-200 px-6 py-3 rounded-lg hover:bg-gray-300"
+                        >
+                            Cancel
+                        </button>
+                    )}
+                </div>
+            </form>
+
+            {/* Projects table */}
+            <div className="bg-white rounded-2xl shadow overflow-hidden">
+                <table className="w-full">
+                    <thead className="bg-gray-50 border-b">
+                        <tr className="text-left">
+                            <th className="p-5">Project</th>
+                            <th className="p-5">Client</th>
+                            <th className="p-5">Status</th>
+                            <th className="p-5 text-right">Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {projects.length === 0 && (
+                            <tr>
+                                <td colSpan="4" className="p-8 text-center text-gray-500">
+                                    No projects created yet.
+                                </td>
+                            </tr>
+                        )}
+
+                        {projects.map(p => (
+                            <tr key={p.id} className="border-t">
+                                <td className="p-5 font-semibold">{p.name}</td>
+                                <td className="p-5 text-gray-600">{p.client}</td>
+                                <td className="p-5">
+                                    <span className={`px-3 py-1 rounded-full text-sm ${statusBadge(p.status)}`}>
+                                        {p.status}
+                                    </span>
+                                </td>
+                                <td className="p-5 text-right space-x-4">
+                                    <button
+                                        onClick={() => startEdit(p)}
+                                        className="text-indigo-600 hover:underline"
+                                    >
+                                        Edit
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (confirm(`Delete "${p.name}" ?`)) {
+                                                destroy(`/admin/projects/${p.id}`);
+                                            }
+                                        }}
+                                        className="text-red-600 hover:underline"
+                                    >
+                                        Delete
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 }
+
+AdminProjects.layout = page => <AdminLayout>{page}</AdminLayout>;

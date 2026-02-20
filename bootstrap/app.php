@@ -24,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
             'password.confirm' => \Illuminate\Auth\Middleware\RequirePassword::class,
             'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+            'admin' => \App\Http\Middleware\AdminMiddleware::class,
 
             /*
             |--------------------------------------------------------------------------

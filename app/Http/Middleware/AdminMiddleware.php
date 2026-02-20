@@ -6,17 +6,13 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class RedirectIfAuthenticated
+class AdminMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
-        if (Auth::check()) {
-            $role = Auth::user()->role;
-
-            if ($role === 'admin') {
-                return redirect()->route('admin.dashboard');
-            }
-
+        // Check if user is logged in and has role 'admin'
+        if (!Auth::check() || Auth::user()->role !== 'admin') {
+            // Redirect non-admin users
             return redirect()->route('dashboard');
         }
 

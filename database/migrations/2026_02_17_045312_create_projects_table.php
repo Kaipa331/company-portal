@@ -11,19 +11,22 @@ return new class extends Migration
      */
     public function up(): void
 {
-    Schema::table('users', function (Blueprint $table) {
-        $table->string('role')->default('client'); // 'client' or 'admin'
+    Schema::create('projects', function (Blueprint $table) {
+        $table->id();
+        $table->string('name');
+        $table->string('client');
+        $table->string('status')->default('Pending');
+        $table->text('description')->nullable();
+        $table->timestamps();
     });
 }
+
 
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('role');
-            //
-        });
+        Schema::dropIfExists('projects');
     }
 };

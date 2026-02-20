@@ -9,34 +9,52 @@ use Inertia\Inertia;
 
 class AuthenticatedSessionController extends Controller
 {
-    // Show login form
+    /**
+     * Show the login form.
+     */
     public function create()
     {
-        return Inertia::render('Auth/Login'); // <-- correct Inertia page
+        return Inertia::render('Auth/Login');
     }
 
-    // Handle login submission
+    /**
+     * Handle an incoming authentication request.
+     */
     public function store(Request $request)
-    {
-        $credentials = $request->validate([
-            'email' => ['required','email'],
-            'password' => ['required'],
-        ]);
+{
+    $request->validate([
+        'email' => ['required', 'string', 'email'],
+        'password' => ['required', 'string'],
+    ]);
 
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
-            $request->session()->regenerate();
-
-            // Role-based redirect
-            if (auth()->user()->role === 'admin') {
-                return redirect()->route('admin.dashboard');
-            }
-
-            return redirect()->route('dashboard'); // client
-        }
-
+    if (! Auth::attempt($request->only('email', 'password'), $request->boolean('remember'))) {
         return back()->withErrors([
-            'email' => 'Invalid credentials.',
-        ]);
+            'email' => __('auth.failed'),
+        ])->onlyInput('email');
+    }
+
+    $request->session()->regenerate();
+
+    // Redirect based on role
+    $user = Auth::user();
+
+    if ($user->role === 'admin') {
+        return redirect()->route('admin.dashboard');
+    }
+
+    return redirect()->route('dashboard');
+}
+    /**
+     * Destroy an authenticated session.
+     */
+    public function destroy(Request $request)
+    {
+        Auth::logout();
+
+        $request->session()->invalidate();
+
+        $request->session()->regenerateToken();
+
+        return redirect()->route('login');
     }
 }
-    
